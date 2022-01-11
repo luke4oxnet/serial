@@ -4,6 +4,7 @@ package serial
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 	"unsafe"
@@ -158,7 +159,22 @@ func (p *Port) Flush() error {
 	}
 	return errno
 }
+func (p *Port) SetHangout(hangout bool) {
+	h := int(p.f.Fd())
+	t, err := unix.IoctlGetTermios(h, unix.TCGETS)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if hangout {
+		t.Cflag |= unix.HUPCL
+	} else {
+		t.Cflag &= ^(uint32)(unix.HUPCL)
+	}
+	unix.IoctlSetTermios(h, unix.TCSETS, t)
+}
 
 func (p *Port) Close() (err error) {
+	p.SetHangout(false)
 	return p.f.Close()
 }
