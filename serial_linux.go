@@ -64,7 +64,7 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 	}()
 
 	// Base settings
-	cflagToUse := unix.CREAD | unix.CLOCAL | rate
+	cflagToUse := unix.CREAD | unix.CLOCAL | unix.CRTSCTS | rate
 	switch databits {
 	case 5:
 		cflagToUse |= unix.CS5
@@ -99,6 +99,7 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 	default:
 		return nil, ErrBadParity
 	}
+
 	fd := f.Fd()
 	vmin, vtime := posixTimeoutValues(readTimeout)
 	t := unix.Termios{
@@ -176,5 +177,10 @@ func (p *Port) SetHangout(hangout bool) {
 
 func (p *Port) Close() (err error) {
 	p.SetHangout(false)
+	return p.f.Close()
+}
+
+func (p *Port) CloseAndReset() (err error) {
+	p.SetHangout(true)
 	return p.f.Close()
 }
